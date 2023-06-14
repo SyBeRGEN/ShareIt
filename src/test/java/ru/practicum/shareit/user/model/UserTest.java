@@ -3,7 +3,7 @@ package ru.practicum.shareit.user.model;
 import org.junit.jupiter.api.Test;
 
 class UserTest {
-    User user = new User(0L, "name", "email");
+    private final User user = new User(0L, "name", "email");
 
     @Test
     void testSetId() {

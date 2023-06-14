@@ -18,11 +18,11 @@ import static org.mockito.Mockito.*;
 
 class UserServiceImplTest {
     @Mock
-    UserMapper mapper;
+    private UserMapper mapper;
     @Mock
-    UserStorage storage;
+    private UserStorage storage;
     @InjectMocks
-    UserServiceImpl userServiceImpl;
+    private UserServiceImpl userServiceImpl;
 
     @BeforeEach
     void setUp() {

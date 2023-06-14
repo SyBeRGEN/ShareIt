@@ -3,7 +3,7 @@ package ru.practicum.shareit.user.dto;
 import org.junit.jupiter.api.Test;
 
 class UserDtoTest {
-    UserDto userDto = new UserDto(0L, "name", "email");
+    private final UserDto userDto = new UserDto(0L, "name", "email");
 
     @Test
     void testSetId() {

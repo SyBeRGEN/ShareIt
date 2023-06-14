@@ -12,9 +12,9 @@ import java.time.Month;
 
 class ItemRequestTest {
     @Mock
-    User requester;
+    private User requester;
     @InjectMocks
-    ItemRequest itemRequest;
+    private ItemRequest itemRequest;
 
     @BeforeEach
     void setUp() {
