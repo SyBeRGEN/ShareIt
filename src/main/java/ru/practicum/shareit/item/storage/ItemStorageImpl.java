@@ -1,40 +1,42 @@
 package ru.practicum.shareit.item.storage;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.item.repository.ItemRepository;
 
-import java.util.*;
+import java.util.List;
 
 @Component
+@RequiredArgsConstructor
 public class ItemStorageImpl implements ItemStorage {
-    private long itemId = 0;
-    private final Map<Long, Item> items = new HashMap<>();
+
+    private final ItemRepository repository;
 
     @Override
     public Item create(Item item) {
-        item.setId(++itemId);
-        items.put(item.getId(), item);
+        repository.save(item);
         return item;
     }
 
     @Override
     public Item update(Item item) {
-        items.put(item.getId(), item);
-        return items.get(item.getId());
+        repository.save(item);
+        return item;
     }
 
     @Override
     public Item getById(long id) {
-        return items.get(id);
+        return repository.findById(id).orElse(null);
     }
 
     @Override
     public List<Item> getAll() {
-        return new ArrayList<>(items.values());
+        return repository.findAll();
     }
 
     @Override
     public void deleteById(long id) {
-        items.remove(id);
+        repository.deleteById(id);
     }
 }

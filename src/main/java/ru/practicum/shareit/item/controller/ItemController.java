@@ -4,7 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.dto.ItemDtoWithBooking;
 import ru.practicum.shareit.item.service.ItemService;
 
 import javax.validation.Valid;
@@ -44,14 +46,20 @@ public class ItemController {
     }
 
     @GetMapping("/{itemId}")
-    public ResponseEntity<ItemDto> getById(@PathVariable long itemId) {
-        ItemDto item = service.getById(itemId);
+    public ResponseEntity<ItemDtoWithBooking> getById(@RequestHeader(userIdHeader) long userId, @PathVariable long itemId) {
+        ItemDtoWithBooking item = service.getById(itemId, userId);
         return ResponseEntity.ok().body(item);
     }
 
     @GetMapping()
-    public ResponseEntity<List<ItemDto>> findAll(@RequestHeader(userIdHeader) long userId) {
-        List<ItemDto> items = service.getAllItemsByUserId(userId);
+    public ResponseEntity<List<ItemDtoWithBooking>> findAll(@RequestHeader(userIdHeader) long userId) {
+        List<ItemDtoWithBooking> items = service.getAllItemsByUserId(userId);
         return ResponseEntity.ok().body(items);
+    }
+
+    @PostMapping("/{itemId}/comment")
+    public ResponseEntity<CommentDto> createComment(@RequestHeader(userIdHeader) long userId, @PathVariable long itemId,
+                                                    @RequestBody @Valid CommentDto commentDto) {
+        return ResponseEntity.ok().body(service.createComment(userId, itemId, commentDto));
     }
 }

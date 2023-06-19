@@ -1,13 +1,21 @@
 package ru.practicum.shareit.item.mapper;
 
 import org.mapstruct.Mapper;
+import org.mapstruct.MappingConstants;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.dto.ItemDtoWithBooking;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.user.mapper.UserMapper;
 
-// 19 java анализирует все мапперы и сопоставляет, в 11 приходится прописывать ComponentModel
-// Очень удобный автоматизированный маппер
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = {UserMapper.class})
 public interface ItemMapper {
-    ItemDto toItemDto(Item item);
-    Item toItem(ItemDto itemDto);
+
+    Item toEntity(ItemDto itemDto);
+
+    ItemDto toDto(Item item);
+
+    ItemDtoWithBooking toDtoWithBooking(Item item);
+
+    Item toEntityFromBooking(ItemDtoWithBooking itemDtoWithBooking);
+
 }

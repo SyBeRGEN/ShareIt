@@ -13,9 +13,9 @@ import java.util.Map;
 @ResponseStatus(HttpStatus.BAD_REQUEST)
 public class ExceptionsHandler {
 
-    @ExceptionHandler
+    @ExceptionHandler(NotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public Map<String, String> handleNotFoundExceptionHandler(NotFoundException exception) {
+    public Map<String, String> handleNotFoundExceptionHandler(Exception exception) {
         log.error("Не найдено: ", exception);
         return Map.of(
                 "error", "Не найдено: ",
@@ -23,9 +23,29 @@ public class ExceptionsHandler {
         );
     }
 
-    @ExceptionHandler
+    @ExceptionHandler(AccessException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Map<String, String> handleAccessExceptionHandler(Exception exception) {
+        log.error("Ошибка авторизации: ", exception);
+        return Map.of(
+                "error", "Ошибка авторизации: ",
+                "errorMessage", exception.getMessage()
+        );
+    }
+
+    @ExceptionHandler(InvalidStatusException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Map<String, String> handleNotValidExceptionHandler(NotValidException exception) {
+    public Map<String, String> handleInvalidStatusExceptionHandler(Exception exception) {
+        log.error("Ошибка статуса: ", exception);
+        return Map.of(
+                "error", "Ошибка статуса: ",
+                "errorMessage", exception.getMessage()
+        );
+    }
+
+    @ExceptionHandler({NotValidException.class, ItemNotAvailableException.class, InvalidLocalDateTimeException.class})
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleNotValidExceptionHandler(Exception exception) {
         log.error("Ошибка в теле: ", exception);
         return Map.of(
                 "error", "Ошибка в теле: ",
@@ -42,11 +62,18 @@ public class ExceptionsHandler {
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.FORBIDDEN)
-    public Map<String, String> handleNotValidExceptionHandler(AuthorizationExcpetion exception) {
+    public Map<String, String> handleNotValidExceptionHandler(AuthorizationException exception) {
         log.error("Ошибка: ", exception);
         return Map.of(
                 "error", "Ошибка: ",
                 "errorMessage", exception.getMessage()
         );
+    }
+
+    @ExceptionHandler(NotFoundStateException.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public Map<String, String> handleInternalServerErrorHandler(Exception exception) {
+        log.error(exception.getMessage());
+        return Map.of("error", exception.getMessage());
     }
 }

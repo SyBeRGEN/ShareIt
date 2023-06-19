@@ -15,4 +15,3 @@ class NotFoundExceptionTest {
         assertEquals("An error occurred", actualNotFoundException.getLocalizedMessage());
     }
 }
-
