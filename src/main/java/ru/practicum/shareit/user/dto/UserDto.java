@@ -1,17 +1,22 @@
 package ru.practicum.shareit.user.dto;
 
-import lombok.Value;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 import java.io.Serializable;
 
-@Value
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class UserDto implements Serializable {
-    long id;
+    private long id;
     @Size(max = 140)
-    String name;
+    private String name;
     @Email
-    @NotBlank String email;
+    @NotBlank
+    private String email;
 }
