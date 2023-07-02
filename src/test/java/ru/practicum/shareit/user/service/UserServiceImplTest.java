@@ -1,68 +1,112 @@
 package ru.practicum.shareit.user.service;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.mapper.UserMapper;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.storage.UserStorage;
 
-import java.util.Collection;
-import java.util.List;
+import java.util.ArrayList;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ContextConfiguration(classes = {UserServiceImpl.class})
+@ExtendWith(SpringExtension.class)
 class UserServiceImplTest {
-    @Mock
-    private UserMapper mapper;
-    @Mock
-    private UserStorage storage;
-    @InjectMocks
+    @MockBean
+    private UserMapper userMapper;
+
+    @Autowired
     private UserServiceImpl userServiceImpl;
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
+    @MockBean
+    private UserStorage userStorage;
 
     @Test
     void testGetById() {
-        when(mapper.toUserDto(any())).thenReturn(new UserDto(0L, "name", "email"));
-        when(storage.getById(anyLong())).thenReturn(new User(0L, "name", "email"));
+        UserDto userDto = new UserDto(1L, "Name", "jane.doe@example.org");
 
-        UserDto result = userServiceImpl.getById(0L);
-        Assertions.assertEquals(new UserDto(0L, "name", "email"), result);
+        when(userMapper.toDto(Mockito.<User>any())).thenReturn(userDto);
+
+        User user = new User();
+        user.setEmail("jane.doe@example.org");
+        user.setId(1L);
+        user.setName("Name");
+        when(userStorage.getById(anyLong())).thenReturn(user);
+        assertSame(userDto, userServiceImpl.getById(1L));
+        verify(userMapper).toDto(Mockito.<User>any());
+        verify(userStorage).getById(anyLong());
+    }
+
+    @Test
+    void testGetAll() {
+        when(userStorage.getAll()).thenReturn(new ArrayList<>());
+        assertTrue(userServiceImpl.getAll().isEmpty());
+        verify(userStorage).getAll();
     }
 
     @Test
     void testCreate() {
-        when(mapper.toUserDto(any())).thenReturn(new UserDto(0L, "name", "email"));
-        when(mapper.toUser(any())).thenReturn(new User(0L, "name", "email"));
-        when(storage.create(any())).thenReturn(new User(0L, "name", "email"));
+        User user = new User();
+        user.setEmail("jane.doe@example.org");
+        user.setId(1L);
+        user.setName("Name");
+        UserDto userDto = new UserDto(1L, "Name", "jane.doe@example.org");
 
-        UserDto result = userServiceImpl.create(new UserDto(0L, "name", "email"));
-        Assertions.assertEquals(new UserDto(0L, "name", "email"), result);
+        when(userMapper.toDto(Mockito.<User>any())).thenReturn(userDto);
+        when(userMapper.toEntity(Mockito.<UserDto>any())).thenReturn(user);
+
+        User user2 = new User();
+        user2.setEmail("jane.doe@example.org");
+        user2.setId(1L);
+        user2.setName("Name");
+        when(userStorage.create(Mockito.<User>any())).thenReturn(user2);
+        assertSame(userDto, userServiceImpl.create(new UserDto(1L, "Name", "jane.doe@example.org")));
+        verify(userMapper).toDto(Mockito.<User>any());
+        verify(userMapper).toEntity(Mockito.<UserDto>any());
+        verify(userStorage).create(Mockito.<User>any());
     }
 
     @Test
     void testUpdate() {
-        when(mapper.toUserDto(any())).thenReturn(new UserDto(0L, "name", "email"));
-        when(mapper.toUser(any())).thenReturn(new User(0L, "name", "email"));
-        when(storage.update(any())).thenReturn(new User(0L, "name", "email"));
+        User user = new User();
+        user.setEmail("jane.doe@example.org");
+        user.setId(1L);
+        user.setName("Name");
+        UserDto userDto = new UserDto(1L, "Name", "jane.doe@example.org");
 
-        UserDto result = userServiceImpl.update(new UserDto(0L, "name", "email"), 0L);
-        Assertions.assertEquals(new UserDto(0L, "name", "email"), result);
+        when(userMapper.toDto(Mockito.<User>any())).thenReturn(userDto);
+        when(userMapper.toEntity(Mockito.<UserDto>any())).thenReturn(user);
+
+        User user2 = new User();
+        user2.setEmail("jane.doe@example.org");
+        user2.setId(1L);
+        user2.setName("Name");
+        when(userStorage.update(Mockito.<User>any())).thenReturn(user2);
+        assertSame(userDto, userServiceImpl.update(new UserDto(1L, "Name", "jane.doe@example.org"), 1L));
+        verify(userMapper).toDto(Mockito.<User>any());
+        verify(userMapper).toEntity(Mockito.<UserDto>any());
+        verify(userStorage).update(Mockito.<User>any());
     }
 
     @Test
     void testDeleteById() {
-        when(storage.deleteById(anyLong())).thenReturn(Boolean.TRUE);
+        when(userStorage.deleteById(anyLong())).thenReturn(true);
+        assertTrue(userServiceImpl.deleteById(1L));
+        verify(userStorage).deleteById(anyLong());
+    }
 
-        Boolean result = userServiceImpl.deleteById(0L);
-        Assertions.assertEquals(Boolean.TRUE, result);
+    @Test
+    void testDeleteById2() {
+        when(userStorage.deleteById(anyLong())).thenReturn(false);
+        assertFalse(userServiceImpl.deleteById(1L));
+        verify(userStorage).deleteById(anyLong());
     }
 }

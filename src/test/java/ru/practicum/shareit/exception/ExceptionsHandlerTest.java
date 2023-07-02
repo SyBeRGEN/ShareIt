@@ -21,7 +21,7 @@ class ExceptionsHandlerTest {
     void testHandleNotValidExceptionHandler() {
         ExceptionsHandler exceptionsHandler = new ExceptionsHandler();
         Map<String, String> actualHandleNotValidExceptionHandlerResult = exceptionsHandler
-                .handleNotValidExceptionHandler(new AuthorizationExcpetion("Not all who wander are lost"));
+                .handleNotValidExceptionHandler(new AuthorizationException("Not all who wander are lost"));
         assertEquals(2, actualHandleNotValidExceptionHandlerResult.size());
         assertEquals("Not all who wander are lost", actualHandleNotValidExceptionHandlerResult.get("errorMessage"));
         assertEquals("Ошибка: ", actualHandleNotValidExceptionHandlerResult.get("error"));
@@ -46,4 +46,3 @@ class ExceptionsHandlerTest {
         assertEquals("An error occurred", actualHandleNotValidEmailExceptionHandlerResult.get("error"));
     }
 }
-

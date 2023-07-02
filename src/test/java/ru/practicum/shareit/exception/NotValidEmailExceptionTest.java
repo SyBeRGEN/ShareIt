@@ -15,4 +15,3 @@ class NotValidEmailExceptionTest {
         assertEquals("An error occurred", actualNotValidEmailException.getLocalizedMessage());
     }
 }
-

@@ -1,66 +1,139 @@
 package ru.practicum.shareit.user.controller;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import ru.practicum.shareit.user.dto.UserDto;
+import ru.practicum.shareit.user.mapper.UserMapperImpl;
+import ru.practicum.shareit.user.model.User;
+import ru.practicum.shareit.user.repository.UserRepository;
 import ru.practicum.shareit.user.service.UserService;
+import ru.practicum.shareit.user.service.UserServiceImpl;
+import ru.practicum.shareit.user.storage.UserStorageImpl;
 
-import java.util.Collection;
-import java.util.List;
+import java.util.ArrayList;
+import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
+@ContextConfiguration(classes = {UserController.class})
+@ExtendWith(SpringExtension.class)
 class UserControllerTest {
-    @Mock
-    private UserService service;
-    @InjectMocks
+    @Autowired
     private UserController userController;
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
+    @MockBean
+    private UserService userService;
 
     @Test
-    void testGetById() {
-        when(service.getById(anyLong())).thenReturn(new UserDto(0L, "name", "email"));
-
-        UserDto result = userController.getById(0L);
-        Assertions.assertEquals(new UserDto(0L, "name", "email"), result);
-    }
-
-    @Test
-    void testGetAllUsers() {
-        when(service.getAll()).thenReturn(List.of(new UserDto(0L, "name", "email")));
-
-        Collection<UserDto> result = userController.getAllUsers();
-        Assertions.assertEquals(List.of(new UserDto(0L, "name", "email")), result);
-    }
-
-    @Test
-    void testCreate() {
-        when(service.create(any())).thenReturn(new UserDto(0L, "name", "email"));
-
-        UserDto result = userController.create(new UserDto(0L, "name", "email"));
-        Assertions.assertEquals(new UserDto(0L, "name", "email"), result);
+    void testGetById() throws Exception {
+        when(userService.getById(anyLong())).thenReturn(new UserDto(1L, "Name", "jane.doe@example.org"));
+        MockHttpServletRequestBuilder requestBuilder = MockMvcRequestBuilders.get("/users/{id}", 1L);
+        MockMvcBuilders.standaloneSetup(userController)
+                .build()
+                .perform(requestBuilder)
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.content().contentType("application/json"))
+                .andExpect(MockMvcResultMatchers.content()
+                        .string("{\"id\":1,\"name\":\"Name\",\"email\":\"jane.doe@example.org\"}"));
     }
 
     @Test
     void testUpdate() {
-        when(service.update(any(), anyLong())).thenReturn(new UserDto(0L, "name", "email"));
+        User user = new User();
+        user.setEmail("jane.doe@example.org");
+        user.setId(1L);
+        user.setName("Name");
+        Optional<User> ofResult = Optional.of(user);
 
-        UserDto result = userController.update(new UserDto(0L, "name", "email"), 0L);
-        Assertions.assertEquals(new UserDto(0L, "name", "email"), result);
+        User user2 = new User();
+        user2.setEmail("jane.doe@example.org");
+        user2.setId(1L);
+        user2.setName("Name");
+        UserRepository repository = mock(UserRepository.class);
+        when(repository.save(Mockito.<User>any())).thenReturn(user2);
+        when(repository.findById(Mockito.<Long>any())).thenReturn(ofResult);
+        UserStorageImpl storage = new UserStorageImpl(repository);
+        UserController userController = new UserController(new UserServiceImpl(new UserMapperImpl(), storage));
+        UserDto actualUpdateResult = userController.update(new UserDto(1L, "Name", "jane.doe@example.org"), 1L);
+        assertEquals("jane.doe@example.org", actualUpdateResult.getEmail());
+        assertEquals("Name", actualUpdateResult.getName());
+        assertEquals(1L, actualUpdateResult.getId());
+        verify(repository).save(Mockito.<User>any());
+        verify(repository).findById(Mockito.<Long>any());
     }
 
     @Test
-    void testDeleteById() {
-        when(service.deleteById(anyLong())).thenReturn(Boolean.TRUE);
+    void testCreate() throws Exception {
+        when(userService.getAll()).thenReturn(new ArrayList<>());
+        MockHttpServletRequestBuilder contentTypeResult = MockMvcRequestBuilders.get("/users")
+                .contentType(MediaType.APPLICATION_JSON);
 
-        userController.deleteById(0L);
+        ObjectMapper objectMapper = new ObjectMapper();
+        MockHttpServletRequestBuilder requestBuilder = contentTypeResult
+                .content(objectMapper.writeValueAsString(new UserDto(1L, "Name", "jane.doe@example.org")));
+        MockMvcBuilders.standaloneSetup(userController)
+                .build()
+                .perform(requestBuilder)
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.content().contentType("application/json"))
+                .andExpect(MockMvcResultMatchers.content().string("[]"));
+    }
+
+    @Test
+    void testDeleteById() throws Exception {
+        when(userService.deleteById(anyLong())).thenReturn(true);
+        MockHttpServletRequestBuilder requestBuilder = MockMvcRequestBuilders.delete("/users/{id}", 1L);
+        MockMvcBuilders.standaloneSetup(userController)
+                .build()
+                .perform(requestBuilder)
+                .andExpect(MockMvcResultMatchers.status().isOk());
+    }
+
+    @Test
+    void testDeleteById2() throws Exception {
+        when(userService.deleteById(anyLong())).thenReturn(true);
+        MockHttpServletRequestBuilder requestBuilder = MockMvcRequestBuilders.delete("/users/{id}", 1L);
+        requestBuilder.characterEncoding("Encoding");
+        MockMvcBuilders.standaloneSetup(userController)
+                .build()
+                .perform(requestBuilder)
+                .andExpect(MockMvcResultMatchers.status().isOk());
+    }
+
+    @Test
+    void testGetAllUsers() throws Exception {
+        when(userService.getAll()).thenReturn(new ArrayList<>());
+        MockHttpServletRequestBuilder requestBuilder = MockMvcRequestBuilders.get("/users");
+        MockMvcBuilders.standaloneSetup(userController)
+                .build()
+                .perform(requestBuilder)
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.content().contentType("application/json"))
+                .andExpect(MockMvcResultMatchers.content().string("[]"));
+    }
+
+    @Test
+    void testGetAllUsers2() throws Exception {
+        when(userService.getAll()).thenReturn(new ArrayList<>());
+        MockHttpServletRequestBuilder requestBuilder = MockMvcRequestBuilders.get("/users");
+        requestBuilder.characterEncoding("Encoding");
+        MockMvcBuilders.standaloneSetup(userController)
+                .build()
+                .perform(requestBuilder)
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.content().contentType("application/json"))
+                .andExpect(MockMvcResultMatchers.content().string("[]"));
     }
 }
