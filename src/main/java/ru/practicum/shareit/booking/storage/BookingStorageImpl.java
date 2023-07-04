@@ -1,6 +1,7 @@
 package ru.practicum.shareit.booking.storage;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 import ru.practicum.shareit.booking.model.Booking;
@@ -30,63 +31,63 @@ public class BookingStorageImpl implements BookingStorage {
     }
 
     @Override
-    public List<Booking> getBookingsByUser(User booker, Sort sort, State state) {
+    public List<Booking> getBookingsByUser(Pageable pageable, User booker, Sort sort, State state) {
         List<Booking> bookings;
 
         switch (state) {
             case WAITING:
-                bookings = repository.findAllByBookerIdAndStatus(booker.getId(),
-                        StatusType.WAITING, sort);
+                bookings = repository.findByBooker_IdAndStatusOrderByStartDesc(booker.getId(),
+                        StatusType.WAITING, pageable);
                 break;
             case REJECTED:
-                bookings = repository.findAllByBookerIdAndStatus(booker.getId(),
-                        StatusType.REJECTED, sort);
+                bookings = repository.findByBooker_IdAndStatusOrderByStartDesc(booker.getId(),
+                        StatusType.REJECTED, pageable);
                 break;
             case PAST:
-                bookings = repository.findAllByBookerIdAndEndBefore(booker.getId(),
-                        LocalDateTime.now(), sort);
+                bookings = repository.findByBooker_IdAndEndBeforeOrderByStartDesc(booker.getId(),
+                        LocalDateTime.now(), pageable);
                 break;
             case FUTURE:
-                bookings = repository.findAllByBookerIdAndStartAfter(booker.getId(),
-                        LocalDateTime.now(), sort);
+                bookings = repository.findByBooker_IdAndStartAfterOrderByStartDesc(booker.getId(),
+                        LocalDateTime.now(), pageable);
                 break;
             case CURRENT:
-                bookings = repository.findAllByBookerIdAndStartBeforeAndEndAfter(booker.getId(),
-                        LocalDateTime.now(), sort);
+                bookings = repository.findByBooker_IdAndStartBeforeAndEndAfterOrderByStartDesc(booker.getId(),
+                        LocalDateTime.now(), LocalDateTime.now(), pageable);
                 break;
             default:
-                bookings = repository.findAllByBookerId(booker.getId(), sort);
+                bookings = repository.findByBooker_IdOrderByStartDesc(booker.getId(), pageable);
         }
         return bookings;
     }
 
     @Override
-    public List<Booking> getBookingsForOwner(User owner, Sort sort, State state) {
+    public List<Booking> getBookingsForOwner(Pageable pageable, User owner, Sort sort, State state) {
         List<Booking> bookings;
 
         switch (state) {
             case WAITING:
-                bookings = repository.findAllByOwnerIdAndStatus(owner.getId(),
-                        StatusType.WAITING, sort);
+                bookings = repository.findByItem_Owner_IdAndStatusOrderByStartDesc(owner.getId(),
+                        StatusType.WAITING, pageable);
                 break;
             case REJECTED:
-                bookings = repository.findAllByOwnerIdAndStatus(owner.getId(),
-                        StatusType.REJECTED, sort);
+                bookings = repository.findByItem_Owner_IdAndStatusOrderByStartDesc(owner.getId(),
+                        StatusType.REJECTED, pageable);
                 break;
             case PAST:
-                bookings = repository.findAllByOwnerIdAndEndBefore(owner.getId(),
-                        LocalDateTime.now(), sort);
+                bookings = repository.findByItem_Owner_IdAndEndBeforeOrderByStartDesc(owner.getId(),
+                        LocalDateTime.now(), pageable);
                 break;
             case FUTURE:
-                bookings = repository.findAllByOwnerIdAndStartAfter(owner.getId(),
-                        LocalDateTime.now(), sort);
+                bookings = repository.findByItem_Owner_IdAndStartAfterOrderByStartDesc(owner.getId(),
+                        LocalDateTime.now(), pageable);
                 break;
             case CURRENT:
-                bookings = repository.findAllByOwnerIdAndStartBeforeAndEndAfter(owner.getId(),
-                        LocalDateTime.now(), sort);
+                bookings = repository.findByItem_Owner_IdAndStartBeforeAndEndAfterOrderByStartDesc(owner.getId(),
+                        LocalDateTime.now(), LocalDateTime.now(), pageable);
                 break;
             default:
-                bookings = repository.findAllByOwnerId(owner.getId(), sort);
+                bookings = repository.findByItem_Owner_IdOrderByStartDesc(owner.getId(), pageable);
         }
         return bookings;
     }

@@ -5,6 +5,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -14,11 +15,13 @@ import ru.practicum.shareit.booking.utils.State;
 import ru.practicum.shareit.booking.utils.StatusType;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.itemRequest.model.ItemRequest;
 import ru.practicum.shareit.user.model.User;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,12 +49,25 @@ class BookingStorageImplTest {
         owner.setId(1L);
         owner.setName("Name");
 
+        User requester = new User();
+        requester.setEmail("jane.doe@example.org");
+        requester.setId(1L);
+        requester.setName("Name");
+
+        ItemRequest request = new ItemRequest();
+        request.setCreated(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setDescription("The characteristics of someone or something");
+        request.setId(1L);
+        request.setItems(new HashSet<>());
+        request.setRequester(requester);
+
         Item item = new Item();
         item.setAvailable(true);
         item.setDescription("The characteristics of someone or something");
         item.setId(1L);
         item.setName("Name");
         item.setOwner(owner);
+        item.setRequest(request);
 
         Booking booking = new Booking();
         booking.setBooker(booker);
@@ -72,12 +88,25 @@ class BookingStorageImplTest {
         owner2.setId(1L);
         owner2.setName("Name");
 
+        User requester2 = new User();
+        requester2.setEmail("jane.doe@example.org");
+        requester2.setId(1L);
+        requester2.setName("Name");
+
+        ItemRequest request2 = new ItemRequest();
+        request2.setCreated(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request2.setDescription("The characteristics of someone or something");
+        request2.setId(1L);
+        request2.setItems(new HashSet<>());
+        request2.setRequester(requester2);
+
         Item item2 = new Item();
         item2.setAvailable(true);
         item2.setDescription("The characteristics of someone or something");
         item2.setId(1L);
         item2.setName("Name");
         item2.setOwner(owner2);
+        item2.setRequest(request2);
 
         Booking booking2 = new Booking();
         booking2.setBooker(booker2);
@@ -87,38 +116,6 @@ class BookingStorageImplTest {
         booking2.setStart(LocalDate.of(1970, 1, 1).atStartOfDay());
         booking2.setStatus(StatusType.WAITING);
         assertSame(booking, bookingStorageImpl.saveBooking(booking2));
-        verify(bookingRepository).save(Mockito.<Booking>any());
-    }
-
-    @Test
-    void testSaveBooking2() {
-        when(bookingRepository.save(Mockito.<Booking>any())).thenThrow(new NotFoundException("An error occurred"));
-
-        User booker = new User();
-        booker.setEmail("jane.doe@example.org");
-        booker.setId(1L);
-        booker.setName("Name");
-
-        User owner = new User();
-        owner.setEmail("jane.doe@example.org");
-        owner.setId(1L);
-        owner.setName("Name");
-
-        Item item = new Item();
-        item.setAvailable(true);
-        item.setDescription("The characteristics of someone or something");
-        item.setId(1L);
-        item.setName("Name");
-        item.setOwner(owner);
-
-        Booking booking = new Booking();
-        booking.setBooker(booker);
-        booking.setEnd(LocalDate.of(1970, 1, 1).atStartOfDay());
-        booking.setId(1L);
-        booking.setItem(item);
-        booking.setStart(LocalDate.of(1970, 1, 1).atStartOfDay());
-        booking.setStatus(StatusType.WAITING);
-        assertThrows(NotFoundException.class, () -> bookingStorageImpl.saveBooking(booking));
         verify(bookingRepository).save(Mockito.<Booking>any());
     }
 
@@ -134,12 +131,25 @@ class BookingStorageImplTest {
         owner.setId(1L);
         owner.setName("Name");
 
+        User requester = new User();
+        requester.setEmail("jane.doe@example.org");
+        requester.setId(1L);
+        requester.setName("Name");
+
+        ItemRequest request = new ItemRequest();
+        request.setCreated(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setDescription("The characteristics of someone or something");
+        request.setId(1L);
+        request.setItems(new HashSet<>());
+        request.setRequester(requester);
+
         Item item = new Item();
         item.setAvailable(true);
         item.setDescription("The characteristics of someone or something");
         item.setId(1L);
         item.setName("Name");
         item.setOwner(owner);
+        item.setRequest(request);
 
         Booking booking = new Booking();
         booking.setBooker(booker);
@@ -171,265 +181,234 @@ class BookingStorageImplTest {
     @Test
     void testGetBookingsByUser() {
         ArrayList<Booking> bookingList = new ArrayList<>();
-        when(bookingRepository.findAllByBookerId(anyLong(), Mockito.<Sort>any())).thenReturn(bookingList);
+        when(bookingRepository.findByBooker_IdOrderByStartDesc(anyLong(), Mockito.<Pageable>any()))
+                .thenReturn(bookingList);
 
         User booker = new User();
         booker.setEmail("jane.doe@example.org");
         booker.setId(1L);
         booker.setName("Name");
         Sort sort = Sort.unsorted();
-        List<Booking> actualBookingsByUser = bookingStorageImpl.getBookingsByUser(booker, sort, State.ALL);
+        List<Booking> actualBookingsByUser = bookingStorageImpl.getBookingsByUser(null, booker, sort, State.ALL);
         assertSame(bookingList, actualBookingsByUser);
         assertTrue(actualBookingsByUser.isEmpty());
-        verify(bookingRepository).findAllByBookerId(anyLong(), Mockito.<Sort>any());
+        verify(bookingRepository).findByBooker_IdOrderByStartDesc(anyLong(), Mockito.<Pageable>any());
         assertTrue(sort.toList().isEmpty());
     }
 
     @Test
     void testGetBookingsByUser2() {
         ArrayList<Booking> bookingList = new ArrayList<>();
-        when(bookingRepository.findAllByBookerIdAndStartBeforeAndEndAfter(anyLong(), Mockito.<LocalDateTime>any(),
-                Mockito.<Sort>any())).thenReturn(bookingList);
-        when(bookingRepository.findAllByBookerId(anyLong(), Mockito.<Sort>any())).thenReturn(new ArrayList<>());
+        when(bookingRepository.findByBooker_IdAndStartBeforeAndEndAfterOrderByStartDesc(anyLong(),
+                Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<Pageable>any())).thenReturn(bookingList);
+        when(bookingRepository.findByBooker_IdOrderByStartDesc(anyLong(), Mockito.<Pageable>any()))
+                .thenReturn(new ArrayList<>());
 
         User booker = new User();
         booker.setEmail("jane.doe@example.org");
         booker.setId(1L);
         booker.setName("Name");
         Sort sort = Sort.unsorted();
-        List<Booking> actualBookingsByUser = bookingStorageImpl.getBookingsByUser(booker, sort, State.CURRENT);
+        List<Booking> actualBookingsByUser = bookingStorageImpl.getBookingsByUser(null, booker, sort, State.CURRENT);
         assertSame(bookingList, actualBookingsByUser);
         assertTrue(actualBookingsByUser.isEmpty());
-        verify(bookingRepository).findAllByBookerIdAndStartBeforeAndEndAfter(anyLong(), Mockito.<LocalDateTime>any(),
-                Mockito.<Sort>any());
+        verify(bookingRepository).findByBooker_IdAndStartBeforeAndEndAfterOrderByStartDesc(anyLong(),
+                Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<Pageable>any());
         assertTrue(sort.toList().isEmpty());
     }
 
     @Test
     void testGetBookingsByUser3() {
         ArrayList<Booking> bookingList = new ArrayList<>();
-        when(
-                bookingRepository.findAllByBookerIdAndEndBefore(anyLong(), Mockito.<LocalDateTime>any(), Mockito.<Sort>any()))
-                .thenReturn(bookingList);
-        when(bookingRepository.findAllByBookerIdAndStartBeforeAndEndAfter(anyLong(), Mockito.<LocalDateTime>any(),
-                Mockito.<Sort>any())).thenReturn(new ArrayList<>());
-        when(bookingRepository.findAllByBookerId(anyLong(), Mockito.<Sort>any())).thenReturn(new ArrayList<>());
+        when(bookingRepository.findByBooker_IdAndEndBeforeOrderByStartDesc(anyLong(), Mockito.<LocalDateTime>any(),
+                Mockito.<Pageable>any())).thenReturn(bookingList);
+        when(bookingRepository.findByBooker_IdAndStartBeforeAndEndAfterOrderByStartDesc(anyLong(),
+                Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<Pageable>any()))
+                .thenReturn(new ArrayList<>());
+        when(bookingRepository.findByBooker_IdOrderByStartDesc(anyLong(), Mockito.<Pageable>any()))
+                .thenReturn(new ArrayList<>());
 
         User booker = new User();
         booker.setEmail("jane.doe@example.org");
         booker.setId(1L);
         booker.setName("Name");
         Sort sort = Sort.unsorted();
-        List<Booking> actualBookingsByUser = bookingStorageImpl.getBookingsByUser(booker, sort, State.PAST);
+        List<Booking> actualBookingsByUser = bookingStorageImpl.getBookingsByUser(null, booker, sort, State.PAST);
         assertSame(bookingList, actualBookingsByUser);
         assertTrue(actualBookingsByUser.isEmpty());
-        verify(bookingRepository).findAllByBookerIdAndEndBefore(anyLong(), Mockito.<LocalDateTime>any(),
-                Mockito.<Sort>any());
+        verify(bookingRepository).findByBooker_IdAndEndBeforeOrderByStartDesc(anyLong(), Mockito.<LocalDateTime>any(),
+                Mockito.<Pageable>any());
         assertTrue(sort.toList().isEmpty());
     }
 
     @Test
     void testGetBookingsByUser4() {
         ArrayList<Booking> bookingList = new ArrayList<>();
-        when(bookingRepository.findAllByBookerIdAndStartAfter(anyLong(), Mockito.<LocalDateTime>any(),
-                Mockito.<Sort>any())).thenReturn(bookingList);
-        when(
-                bookingRepository.findAllByBookerIdAndEndBefore(anyLong(), Mockito.<LocalDateTime>any(), Mockito.<Sort>any()))
+        when(bookingRepository.findByBooker_IdAndStartAfterOrderByStartDesc(anyLong(), Mockito.<LocalDateTime>any(),
+                Mockito.<Pageable>any())).thenReturn(bookingList);
+        when(bookingRepository.findByBooker_IdAndEndBeforeOrderByStartDesc(anyLong(), Mockito.<LocalDateTime>any(),
+                Mockito.<Pageable>any())).thenReturn(new ArrayList<>());
+        when(bookingRepository.findByBooker_IdAndStartBeforeAndEndAfterOrderByStartDesc(anyLong(),
+                Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<Pageable>any()))
                 .thenReturn(new ArrayList<>());
-        when(bookingRepository.findAllByBookerIdAndStartBeforeAndEndAfter(anyLong(), Mockito.<LocalDateTime>any(),
-                Mockito.<Sort>any())).thenReturn(new ArrayList<>());
-        when(bookingRepository.findAllByBookerId(anyLong(), Mockito.<Sort>any())).thenReturn(new ArrayList<>());
+        when(bookingRepository.findByBooker_IdOrderByStartDesc(anyLong(), Mockito.<Pageable>any()))
+                .thenReturn(new ArrayList<>());
 
         User booker = new User();
         booker.setEmail("jane.doe@example.org");
         booker.setId(1L);
         booker.setName("Name");
         Sort sort = Sort.unsorted();
-        List<Booking> actualBookingsByUser = bookingStorageImpl.getBookingsByUser(booker, sort, State.FUTURE);
+        List<Booking> actualBookingsByUser = bookingStorageImpl.getBookingsByUser(null, booker, sort, State.FUTURE);
         assertSame(bookingList, actualBookingsByUser);
         assertTrue(actualBookingsByUser.isEmpty());
-        verify(bookingRepository).findAllByBookerIdAndStartAfter(anyLong(), Mockito.<LocalDateTime>any(),
-                Mockito.<Sort>any());
+        verify(bookingRepository).findByBooker_IdAndStartAfterOrderByStartDesc(anyLong(), Mockito.<LocalDateTime>any(),
+                Mockito.<Pageable>any());
         assertTrue(sort.toList().isEmpty());
     }
 
     @Test
     void testGetBookingsByUser5() {
         ArrayList<Booking> bookingList = new ArrayList<>();
-        when(bookingRepository.findAllByBookerIdAndStatus(anyLong(), Mockito.<StatusType>any(), Mockito.<Sort>any()))
-                .thenReturn(bookingList);
-        when(bookingRepository.findAllByBookerIdAndStartAfter(anyLong(), Mockito.<LocalDateTime>any(),
-                Mockito.<Sort>any())).thenReturn(new ArrayList<>());
-        when(
-                bookingRepository.findAllByBookerIdAndEndBefore(anyLong(), Mockito.<LocalDateTime>any(), Mockito.<Sort>any()))
+        when(bookingRepository.findByBooker_IdAndStatusOrderByStartDesc(anyLong(), Mockito.<StatusType>any(),
+                Mockito.<Pageable>any())).thenReturn(bookingList);
+        when(bookingRepository.findByBooker_IdAndStartAfterOrderByStartDesc(anyLong(), Mockito.<LocalDateTime>any(),
+                Mockito.<Pageable>any())).thenReturn(new ArrayList<>());
+        when(bookingRepository.findByBooker_IdAndEndBeforeOrderByStartDesc(anyLong(), Mockito.<LocalDateTime>any(),
+                Mockito.<Pageable>any())).thenReturn(new ArrayList<>());
+        when(bookingRepository.findByBooker_IdAndStartBeforeAndEndAfterOrderByStartDesc(anyLong(),
+                Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<Pageable>any()))
                 .thenReturn(new ArrayList<>());
-        when(bookingRepository.findAllByBookerIdAndStartBeforeAndEndAfter(anyLong(), Mockito.<LocalDateTime>any(),
-                Mockito.<Sort>any())).thenReturn(new ArrayList<>());
-        when(bookingRepository.findAllByBookerId(anyLong(), Mockito.<Sort>any())).thenReturn(new ArrayList<>());
+        when(bookingRepository.findByBooker_IdOrderByStartDesc(anyLong(), Mockito.<Pageable>any()))
+                .thenReturn(new ArrayList<>());
 
         User booker = new User();
         booker.setEmail("jane.doe@example.org");
         booker.setId(1L);
         booker.setName("Name");
         Sort sort = Sort.unsorted();
-        List<Booking> actualBookingsByUser = bookingStorageImpl.getBookingsByUser(booker, sort, State.WAITING);
+        List<Booking> actualBookingsByUser = bookingStorageImpl.getBookingsByUser(null, booker, sort, State.WAITING);
         assertSame(bookingList, actualBookingsByUser);
         assertTrue(actualBookingsByUser.isEmpty());
-        verify(bookingRepository).findAllByBookerIdAndStatus(anyLong(), Mockito.<StatusType>any(), Mockito.<Sort>any());
+        verify(bookingRepository).findByBooker_IdAndStatusOrderByStartDesc(anyLong(), Mockito.<StatusType>any(),
+                Mockito.<Pageable>any());
         assertTrue(sort.toList().isEmpty());
-    }
-
-    @Test
-    void testGetBookingsByUser6() {
-        when(bookingRepository.findAllByBookerIdAndStatus(anyLong(), Mockito.<StatusType>any(), Mockito.<Sort>any()))
-                .thenThrow(new NotFoundException("An error occurred"));
-        when(bookingRepository.findAllByBookerIdAndStartAfter(anyLong(), Mockito.<LocalDateTime>any(),
-                Mockito.<Sort>any())).thenReturn(new ArrayList<>());
-        when(
-                bookingRepository.findAllByBookerIdAndEndBefore(anyLong(), Mockito.<LocalDateTime>any(), Mockito.<Sort>any()))
-                .thenReturn(new ArrayList<>());
-        when(bookingRepository.findAllByBookerIdAndStartBeforeAndEndAfter(anyLong(), Mockito.<LocalDateTime>any(),
-                Mockito.<Sort>any())).thenReturn(new ArrayList<>());
-        when(bookingRepository.findAllByBookerId(anyLong(), Mockito.<Sort>any())).thenReturn(new ArrayList<>());
-
-        User booker = new User();
-        booker.setEmail("jane.doe@example.org");
-        booker.setId(1L);
-        booker.setName("Name");
-        assertThrows(NotFoundException.class,
-                () -> bookingStorageImpl.getBookingsByUser(booker, Sort.unsorted(), State.WAITING));
-        verify(bookingRepository).findAllByBookerIdAndStatus(anyLong(), Mockito.<StatusType>any(), Mockito.<Sort>any());
     }
 
     @Test
     void testGetBookingsForOwner() {
         ArrayList<Booking> bookingList = new ArrayList<>();
-        when(bookingRepository.findAllByOwnerId(anyLong(), Mockito.<Sort>any())).thenReturn(bookingList);
+        when(bookingRepository.findByItem_Owner_IdOrderByStartDesc(anyLong(), Mockito.<Pageable>any()))
+                .thenReturn(bookingList);
 
         User owner = new User();
         owner.setEmail("jane.doe@example.org");
         owner.setId(1L);
         owner.setName("Name");
         Sort sort = Sort.unsorted();
-        List<Booking> actualBookingsForOwner = bookingStorageImpl.getBookingsForOwner(owner, sort, State.ALL);
+        List<Booking> actualBookingsForOwner = bookingStorageImpl.getBookingsForOwner(null, owner, sort, State.ALL);
         assertSame(bookingList, actualBookingsForOwner);
         assertTrue(actualBookingsForOwner.isEmpty());
-        verify(bookingRepository).findAllByOwnerId(anyLong(), Mockito.<Sort>any());
+        verify(bookingRepository).findByItem_Owner_IdOrderByStartDesc(anyLong(), Mockito.<Pageable>any());
         assertTrue(sort.toList().isEmpty());
     }
 
     @Test
     void testGetBookingsForOwner2() {
         ArrayList<Booking> bookingList = new ArrayList<>();
-        when(bookingRepository.findAllByOwnerIdAndStartBeforeAndEndAfter(anyLong(), Mockito.<LocalDateTime>any(),
-                Mockito.<Sort>any())).thenReturn(bookingList);
-        when(bookingRepository.findAllByOwnerId(anyLong(), Mockito.<Sort>any())).thenReturn(new ArrayList<>());
+        when(bookingRepository.findByItem_Owner_IdAndStartBeforeAndEndAfterOrderByStartDesc(anyLong(),
+                Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<Pageable>any())).thenReturn(bookingList);
+        when(bookingRepository.findByItem_Owner_IdOrderByStartDesc(anyLong(), Mockito.<Pageable>any()))
+                .thenReturn(new ArrayList<>());
 
         User owner = new User();
         owner.setEmail("jane.doe@example.org");
         owner.setId(1L);
         owner.setName("Name");
         Sort sort = Sort.unsorted();
-        List<Booking> actualBookingsForOwner = bookingStorageImpl.getBookingsForOwner(owner, sort, State.CURRENT);
+        List<Booking> actualBookingsForOwner = bookingStorageImpl.getBookingsForOwner(null, owner, sort, State.CURRENT);
         assertSame(bookingList, actualBookingsForOwner);
         assertTrue(actualBookingsForOwner.isEmpty());
-        verify(bookingRepository).findAllByOwnerIdAndStartBeforeAndEndAfter(anyLong(), Mockito.<LocalDateTime>any(),
-                Mockito.<Sort>any());
+        verify(bookingRepository).findByItem_Owner_IdAndStartBeforeAndEndAfterOrderByStartDesc(anyLong(),
+                Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<Pageable>any());
         assertTrue(sort.toList().isEmpty());
     }
 
     @Test
     void testGetBookingsForOwner3() {
         ArrayList<Booking> bookingList = new ArrayList<>();
-        when(bookingRepository.findAllByOwnerIdAndEndBefore(anyLong(), Mockito.<LocalDateTime>any(), Mockito.<Sort>any()))
-                .thenReturn(bookingList);
-        when(bookingRepository.findAllByOwnerIdAndStartBeforeAndEndAfter(anyLong(), Mockito.<LocalDateTime>any(),
-                Mockito.<Sort>any())).thenReturn(new ArrayList<>());
-        when(bookingRepository.findAllByOwnerId(anyLong(), Mockito.<Sort>any())).thenReturn(new ArrayList<>());
+        when(bookingRepository.findByItem_Owner_IdAndEndBeforeOrderByStartDesc(anyLong(), Mockito.<LocalDateTime>any(),
+                Mockito.<Pageable>any())).thenReturn(bookingList);
+        when(bookingRepository.findByItem_Owner_IdAndStartBeforeAndEndAfterOrderByStartDesc(anyLong(),
+                Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<Pageable>any()))
+                .thenReturn(new ArrayList<>());
+        when(bookingRepository.findByItem_Owner_IdOrderByStartDesc(anyLong(), Mockito.<Pageable>any()))
+                .thenReturn(new ArrayList<>());
 
         User owner = new User();
         owner.setEmail("jane.doe@example.org");
         owner.setId(1L);
         owner.setName("Name");
         Sort sort = Sort.unsorted();
-        List<Booking> actualBookingsForOwner = bookingStorageImpl.getBookingsForOwner(owner, sort, State.PAST);
+        List<Booking> actualBookingsForOwner = bookingStorageImpl.getBookingsForOwner(null, owner, sort, State.PAST);
         assertSame(bookingList, actualBookingsForOwner);
         assertTrue(actualBookingsForOwner.isEmpty());
-        verify(bookingRepository).findAllByOwnerIdAndEndBefore(anyLong(), Mockito.<LocalDateTime>any(),
-                Mockito.<Sort>any());
+        verify(bookingRepository).findByItem_Owner_IdAndEndBeforeOrderByStartDesc(anyLong(), Mockito.<LocalDateTime>any(),
+                Mockito.<Pageable>any());
         assertTrue(sort.toList().isEmpty());
     }
 
     @Test
     void testGetBookingsForOwner4() {
         ArrayList<Booking> bookingList = new ArrayList<>();
-        when(
-                bookingRepository.findAllByOwnerIdAndStartAfter(anyLong(), Mockito.<LocalDateTime>any(), Mockito.<Sort>any()))
-                .thenReturn(bookingList);
-        when(bookingRepository.findAllByOwnerIdAndEndBefore(anyLong(), Mockito.<LocalDateTime>any(), Mockito.<Sort>any()))
+        when(bookingRepository.findByItem_Owner_IdAndStartAfterOrderByStartDesc(anyLong(), Mockito.<LocalDateTime>any(),
+                Mockito.<Pageable>any())).thenReturn(bookingList);
+        when(bookingRepository.findByItem_Owner_IdAndEndBeforeOrderByStartDesc(anyLong(), Mockito.<LocalDateTime>any(),
+                Mockito.<Pageable>any())).thenReturn(new ArrayList<>());
+        when(bookingRepository.findByItem_Owner_IdAndStartBeforeAndEndAfterOrderByStartDesc(anyLong(),
+                Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<Pageable>any()))
                 .thenReturn(new ArrayList<>());
-        when(bookingRepository.findAllByOwnerIdAndStartBeforeAndEndAfter(anyLong(), Mockito.<LocalDateTime>any(),
-                Mockito.<Sort>any())).thenReturn(new ArrayList<>());
-        when(bookingRepository.findAllByOwnerId(anyLong(), Mockito.<Sort>any())).thenReturn(new ArrayList<>());
+        when(bookingRepository.findByItem_Owner_IdOrderByStartDesc(anyLong(), Mockito.<Pageable>any()))
+                .thenReturn(new ArrayList<>());
 
         User owner = new User();
         owner.setEmail("jane.doe@example.org");
         owner.setId(1L);
         owner.setName("Name");
         Sort sort = Sort.unsorted();
-        List<Booking> actualBookingsForOwner = bookingStorageImpl.getBookingsForOwner(owner, sort, State.FUTURE);
+        List<Booking> actualBookingsForOwner = bookingStorageImpl.getBookingsForOwner(null, owner, sort, State.FUTURE);
         assertSame(bookingList, actualBookingsForOwner);
         assertTrue(actualBookingsForOwner.isEmpty());
-        verify(bookingRepository).findAllByOwnerIdAndStartAfter(anyLong(), Mockito.<LocalDateTime>any(),
-                Mockito.<Sort>any());
+        verify(bookingRepository).findByItem_Owner_IdAndStartAfterOrderByStartDesc(anyLong(),
+                Mockito.<LocalDateTime>any(), Mockito.<Pageable>any());
         assertTrue(sort.toList().isEmpty());
     }
 
     @Test
     void testGetBookingsForOwner5() {
         ArrayList<Booking> bookingList = new ArrayList<>();
-        when(bookingRepository.findAllByOwnerIdAndStatus(anyLong(), Mockito.<StatusType>any(), Mockito.<Sort>any()))
-                .thenReturn(bookingList);
-        when(
-                bookingRepository.findAllByOwnerIdAndStartAfter(anyLong(), Mockito.<LocalDateTime>any(), Mockito.<Sort>any()))
+        when(bookingRepository.findByItem_Owner_IdAndStatusOrderByStartDesc(anyLong(), Mockito.<StatusType>any(),
+                Mockito.<Pageable>any())).thenReturn(bookingList);
+        when(bookingRepository.findByItem_Owner_IdAndStartAfterOrderByStartDesc(anyLong(), Mockito.<LocalDateTime>any(),
+                Mockito.<Pageable>any())).thenReturn(new ArrayList<>());
+        when(bookingRepository.findByItem_Owner_IdAndEndBeforeOrderByStartDesc(anyLong(), Mockito.<LocalDateTime>any(),
+                Mockito.<Pageable>any())).thenReturn(new ArrayList<>());
+        when(bookingRepository.findByItem_Owner_IdAndStartBeforeAndEndAfterOrderByStartDesc(anyLong(),
+                Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<Pageable>any()))
                 .thenReturn(new ArrayList<>());
-        when(bookingRepository.findAllByOwnerIdAndEndBefore(anyLong(), Mockito.<LocalDateTime>any(), Mockito.<Sort>any()))
+        when(bookingRepository.findByItem_Owner_IdOrderByStartDesc(anyLong(), Mockito.<Pageable>any()))
                 .thenReturn(new ArrayList<>());
-        when(bookingRepository.findAllByOwnerIdAndStartBeforeAndEndAfter(anyLong(), Mockito.<LocalDateTime>any(),
-                Mockito.<Sort>any())).thenReturn(new ArrayList<>());
-        when(bookingRepository.findAllByOwnerId(anyLong(), Mockito.<Sort>any())).thenReturn(new ArrayList<>());
 
         User owner = new User();
         owner.setEmail("jane.doe@example.org");
         owner.setId(1L);
         owner.setName("Name");
         Sort sort = Sort.unsorted();
-        List<Booking> actualBookingsForOwner = bookingStorageImpl.getBookingsForOwner(owner, sort, State.WAITING);
+        List<Booking> actualBookingsForOwner = bookingStorageImpl.getBookingsForOwner(null, owner, sort, State.WAITING);
         assertSame(bookingList, actualBookingsForOwner);
         assertTrue(actualBookingsForOwner.isEmpty());
-        verify(bookingRepository).findAllByOwnerIdAndStatus(anyLong(), Mockito.<StatusType>any(), Mockito.<Sort>any());
+        verify(bookingRepository).findByItem_Owner_IdAndStatusOrderByStartDesc(anyLong(), Mockito.<StatusType>any(),
+                Mockito.<Pageable>any());
         assertTrue(sort.toList().isEmpty());
-    }
-
-    @Test
-    void testGetBookingsForOwner6() {
-        when(bookingRepository.findAllByOwnerIdAndStatus(anyLong(), Mockito.<StatusType>any(), Mockito.<Sort>any()))
-                .thenThrow(new NotFoundException("An error occurred"));
-        when(
-                bookingRepository.findAllByOwnerIdAndStartAfter(anyLong(), Mockito.<LocalDateTime>any(), Mockito.<Sort>any()))
-                .thenReturn(new ArrayList<>());
-        when(bookingRepository.findAllByOwnerIdAndEndBefore(anyLong(), Mockito.<LocalDateTime>any(), Mockito.<Sort>any()))
-                .thenReturn(new ArrayList<>());
-        when(bookingRepository.findAllByOwnerIdAndStartBeforeAndEndAfter(anyLong(), Mockito.<LocalDateTime>any(),
-                Mockito.<Sort>any())).thenReturn(new ArrayList<>());
-        when(bookingRepository.findAllByOwnerId(anyLong(), Mockito.<Sort>any())).thenReturn(new ArrayList<>());
-
-        User owner = new User();
-        owner.setEmail("jane.doe@example.org");
-        owner.setId(1L);
-        owner.setName("Name");
-        assertThrows(NotFoundException.class,
-                () -> bookingStorageImpl.getBookingsForOwner(owner, Sort.unsorted(), State.WAITING));
-        verify(bookingRepository).findAllByOwnerIdAndStatus(anyLong(), Mockito.<StatusType>any(), Mockito.<Sort>any());
     }
 }
