@@ -1,6 +1,7 @@
 package ru.practicum.shareit.booking.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +25,7 @@ import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserService;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -90,10 +92,10 @@ public class BookingServiceImpl implements BookingService {
 
     @Transactional(readOnly = true)
     @Override
-    public List<BookingOutputDto> getBookingsByUser(long userId, State state) {
+    public List<BookingOutputDto> getBookingsByUser(Pageable pageable, long userId, State state) {
         User booker = userMapper.toEntity(userService.getById(userId));
         Sort sort = Sort.by(Sort.Direction.DESC, "start");
-        List<Booking> bookings = storage.getBookingsByUser(booker, sort, state);
+        List<Booking> bookings = storage.getBookingsByUser(pageable, booker, sort, state);
 
         return bookings
                 .stream()
@@ -103,10 +105,12 @@ public class BookingServiceImpl implements BookingService {
 
     @Transactional(readOnly = true)
     @Override
-    public List<BookingOutputDto> getBookingsForOwner(long userId, State state) {
+    public List<BookingOutputDto> getBookingsForOwner(Pageable pageable, long userId, State state) {
         User owner = userMapper.toEntity(userService.getById(userId));
         Sort sort = Sort.by(Sort.Direction.DESC, "start");
-        List<Booking> bookings = storage.getBookingsForOwner(owner, sort, state);
+        List<Booking> bookings = storage.getBookingsForOwner(pageable, owner, sort, state);
+
+        bookings.sort(Comparator.comparing(Booking::getStart).reversed());
 
         return bookings
                 .stream()

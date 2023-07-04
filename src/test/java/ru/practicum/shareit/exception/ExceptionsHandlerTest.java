@@ -18,6 +18,26 @@ class ExceptionsHandlerTest {
     }
 
     @Test
+    void testHandleAccessExceptionHandler() {
+        ExceptionsHandler exceptionsHandler = new ExceptionsHandler();
+        Map<String, String> actualHandleAccessExceptionHandlerResult = exceptionsHandler
+                .handleAccessExceptionHandler(new Exception("foo"));
+        assertEquals(2, actualHandleAccessExceptionHandlerResult.size());
+        assertEquals("Ошибка авторизации: ", actualHandleAccessExceptionHandlerResult.get("error"));
+        assertEquals("foo", actualHandleAccessExceptionHandlerResult.get("errorMessage"));
+    }
+
+    @Test
+    void testHandleInvalidStatusExceptionHandler() {
+        ExceptionsHandler exceptionsHandler = new ExceptionsHandler();
+        Map<String, String> actualHandleInvalidStatusExceptionHandlerResult = exceptionsHandler
+                .handleInvalidStatusExceptionHandler(new Exception("foo"));
+        assertEquals(2, actualHandleInvalidStatusExceptionHandlerResult.size());
+        assertEquals("Ошибка статуса: ", actualHandleInvalidStatusExceptionHandlerResult.get("error"));
+        assertEquals("foo", actualHandleInvalidStatusExceptionHandlerResult.get("errorMessage"));
+    }
+
+    @Test
     void testHandleNotValidExceptionHandler() {
         ExceptionsHandler exceptionsHandler = new ExceptionsHandler();
         Map<String, String> actualHandleNotValidExceptionHandlerResult = exceptionsHandler
@@ -28,13 +48,12 @@ class ExceptionsHandlerTest {
     }
 
     @Test
-    void testHandleNotValidExceptionHandler2() {
+    void testHandleInternalServerErrorHandler() {
         ExceptionsHandler exceptionsHandler = new ExceptionsHandler();
-        Map<String, String> actualHandleNotValidExceptionHandlerResult = exceptionsHandler
-                .handleNotValidExceptionHandler(new NotValidException("An error occurred"));
-        assertEquals(2, actualHandleNotValidExceptionHandlerResult.size());
-        assertEquals("An error occurred", actualHandleNotValidExceptionHandlerResult.get("errorMessage"));
-        assertEquals("Ошибка в теле: ", actualHandleNotValidExceptionHandlerResult.get("error"));
+        Map<String, String> actualHandleInternalServerErrorHandlerResult = exceptionsHandler
+                .handleInternalServerErrorHandler(new Exception("foo"));
+        assertEquals(1, actualHandleInternalServerErrorHandlerResult.size());
+        assertEquals("foo", actualHandleInternalServerErrorHandlerResult.get("error"));
     }
 
     @Test
