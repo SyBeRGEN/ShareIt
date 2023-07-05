@@ -60,6 +60,7 @@ class ItemDtoTest {
         boolean result = itemDto.canEqual("other");
         Assertions.assertEquals(false, result);
     }
+
     @Test
     void testToString() {
         String result = itemDto.toString();
