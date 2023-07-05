@@ -205,12 +205,12 @@ public class ItemServiceImpl implements ItemService {
 
     private void setBookings(ItemDtoWithBooking itemDtoWithBooking, List<BookingItemDto> bookings) {
         itemDtoWithBooking.setLastBooking(bookings.stream()
-                .filter(booking -> booking.getItem().getId() == itemDtoWithBooking.getId() &&
+                .filter(booking -> Objects.equals(booking.getItem().getId(), itemDtoWithBooking.getId()) &&
                         booking.getStart().isBefore(LocalDateTime.now()))
                 .max(Comparator.comparing(BookingItemDto::getStart)).orElse(null));
 
         itemDtoWithBooking.setNextBooking(bookings.stream()
-                .filter(booking -> booking.getItem().getId() == itemDtoWithBooking.getId() &&
+                .filter(booking -> Objects.equals(booking.getItem().getId(), itemDtoWithBooking.getId()) &&
                         booking.getStart().isAfter(LocalDateTime.now()))
                 .min(Comparator.comparing(BookingItemDto::getStart)).orElse(null));
     }
