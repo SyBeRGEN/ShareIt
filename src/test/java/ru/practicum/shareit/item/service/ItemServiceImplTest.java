@@ -8,6 +8,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.web.server.ResponseStatusException;
 import ru.practicum.shareit.booking.mapper.BookingMapper;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.repository.BookingRepository;
@@ -1382,5 +1383,34 @@ class ItemServiceImplTest {
         verify(bookingRepository).findAllByItemIdAndBookerIdAndStatus(anyLong(), anyLong(), Mockito.<StatusType>any(),
                 Mockito.<Sort>any());
         verify(commentMapper).toEntity(Mockito.<CommentDto>any());
+    }
+
+    @Test
+    void create_ThrowsResponseStatusException_WhenItemRequestNotFound() {
+        long itemId = 1L;
+        long userId = 100L;
+        ItemDto itemDto = new ItemDto();
+        itemDto.setRequestId(itemId);
+
+        when(itemRequestRepository.findById(itemId)).thenReturn(Optional.empty());
+
+        assertThrows(ResponseStatusException.class, () -> itemServiceImpl.create(itemDto, userId),
+                String.format("Запроса с id = %d нет", itemId));
+
+        verify(itemRequestRepository, times(1)).findById(itemId);
+        verifyNoMoreInteractions(itemRequestRepository, userStorage, itemStorage, bookingMapper);
+    }
+
+    @Test
+    public void createComment_ThrowsNotFoundException() {
+        long userId = 1;
+        long itemId = 1;
+        CommentDto commentDto = new CommentDto();
+
+        when(userStorage.getById(userId)).thenReturn(null);
+
+        assertThrows(NotFoundException.class, () -> {
+            itemServiceImpl.createComment(userId, itemId, commentDto);
+        });
     }
 }

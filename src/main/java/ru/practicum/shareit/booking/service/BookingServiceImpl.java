@@ -118,7 +118,7 @@ public class BookingServiceImpl implements BookingService {
                 .collect(Collectors.toList());
     }
 
-    private void validateAddBooking(Booking booking, Item item, User booker) {
+    void validateAddBooking(Booking booking, Item item, User booker) {
         if (booker.getId() == item.getOwner().getId()) {
             throw new AccessException("Владелец не может бронировать свои вещи");
         } else if (!item.getAvailable()) {
@@ -128,12 +128,12 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    private boolean isNotValidDate(LocalDateTime startBooking, LocalDateTime endBooking) {
+    boolean isNotValidDate(LocalDateTime startBooking, LocalDateTime endBooking) {
         return startBooking.isBefore(LocalDateTime.now()) || endBooking.isBefore(LocalDateTime.now())
                 || endBooking.isBefore(startBooking) || startBooking.isEqual(endBooking);
     }
 
-    private boolean isUnableToAccess(long userId, Booking booking, AccessLevel accessLevel) {
+    boolean isUnableToAccess(long userId, Booking booking, AccessLevel accessLevel) {
         boolean isUnable = true;
         switch (accessLevel) {
             case OWNER:

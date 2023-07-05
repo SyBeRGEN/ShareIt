@@ -18,6 +18,8 @@ import ru.practicum.shareit.booking.utils.AccessLevel;
 import ru.practicum.shareit.booking.utils.State;
 import ru.practicum.shareit.booking.utils.StatusType;
 import ru.practicum.shareit.exception.AccessException;
+import ru.practicum.shareit.exception.InvalidLocalDateTimeException;
+import ru.practicum.shareit.exception.ItemNotAvailableException;
 import ru.practicum.shareit.item.dto.ItemDtoWithBooking;
 import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.model.Item;
@@ -889,5 +891,128 @@ class BookingServiceImplTest {
         when(userService.getById(anyLong())).thenThrow(new AccessException("An error occurred"));
         assertThrows(AccessException.class, () -> bookingServiceImpl.getBookingsForOwner(null, 1L, State.ALL));
         verify(userService).getById(anyLong());
+    }
+
+    @Test
+    public void testValidateAddBooking_WhenOwnerTriesToBook_ShouldThrowAccessException() {
+        User owner = new User();
+        Item item = new Item();
+        item.setOwner(owner);
+        Booking booking = new Booking();
+        booking.setStart(LocalDateTime.now());
+        booking.setEnd(LocalDateTime.now().plusHours(3));
+
+        assertThrows(AccessException.class, () -> bookingServiceImpl.validateAddBooking(booking, item, owner));
+    }
+
+    @Test
+    public void testValidateAddBooking_WhenItemNotAvailable_ShouldThrowItemNotAvailableException() {
+        User owner = new User();
+        owner.setId(1L);
+        Item item = new Item();
+        item.setOwner(owner);
+        item.setAvailable(false);
+        Booking booking = new Booking();
+        booking.setStart(LocalDateTime.now());
+        booking.setEnd(LocalDateTime.now().plusHours(3));
+
+        User ownerTwo = new User();
+        ownerTwo.setId(2L);
+
+        assertThrows(ItemNotAvailableException.class, () -> bookingServiceImpl.validateAddBooking(booking, item, ownerTwo));
+    }
+
+    @Test
+    public void testValidateAddBooking_WhenInvalidDatesProvided_ShouldThrowInvalidLocalDateTimeException() {
+        User owner = new User();
+        owner.setId(1L);
+        Item item = new Item();
+        item.setOwner(owner);
+        item.setAvailable(true);
+        Booking booking = new Booking();
+        booking.setStart(LocalDateTime.now());
+        booking.setEnd(LocalDateTime.now().minusHours(1));
+
+        User ownerTwo = new User();
+        ownerTwo.setId(2L);
+
+        assertThrows(InvalidLocalDateTimeException.class, () -> bookingServiceImpl.validateAddBooking(booking, item, ownerTwo));
+    }
+
+    @Test
+    public void testIsUnableToAccess() {
+        User owner = new User();
+        owner.setId(1L);
+        owner.setName("John");
+        owner.setEmail("email@email.ru");
+
+        User booker = new User();
+        booker.setId(2L);
+        booker.setName("Jane");
+        booker.setEmail("emailTwo@email.ru");
+
+        Item item = new Item();
+        item.setOwner(owner);
+        item.setName("Sample Item");
+
+        Booking booking = new Booking();
+        booking.setItem(item);
+        booking.setBooker(booker);
+
+        AccessLevel accessLevel;
+
+        accessLevel = AccessLevel.OWNER;
+        assertFalse(bookingServiceImpl.isUnableToAccess(1, booking, accessLevel));
+        assertTrue(bookingServiceImpl.isUnableToAccess(3, booking, accessLevel));
+
+        accessLevel = AccessLevel.BOOKER;
+        assertFalse(bookingServiceImpl.isUnableToAccess(2, booking, accessLevel));
+        assertTrue(bookingServiceImpl.isUnableToAccess(4, booking, accessLevel));
+
+        accessLevel = AccessLevel.BOTH;
+        assertTrue(bookingServiceImpl.isUnableToAccess(3, booking, accessLevel));
+        assertTrue(bookingServiceImpl.isUnableToAccess(4, booking, accessLevel));
+        assertFalse(bookingServiceImpl.isUnableToAccess(1, booking, accessLevel));
+        assertFalse(bookingServiceImpl.isUnableToAccess(2, booking, accessLevel));
+    }
+
+    @Test
+    void testValidDateRange() {
+        LocalDateTime startBooking = LocalDateTime.now().plusHours(1);
+        LocalDateTime endBooking = LocalDateTime.now().plusHours(2);
+
+        assertFalse(bookingServiceImpl.isNotValidDate(startBooking, endBooking));
+    }
+
+    @Test
+    void testStartBookingBeforeNow() {
+        LocalDateTime startBooking = LocalDateTime.now().minusHours(1);
+        LocalDateTime endBooking = LocalDateTime.now().plusHours(1);
+
+        assertTrue(bookingServiceImpl.isNotValidDate(startBooking, endBooking));
+    }
+
+    @Test
+    void testEndBookingBeforeNow() {
+        LocalDateTime startBooking = LocalDateTime.now().plusHours(1);
+        LocalDateTime endBooking = LocalDateTime.now().minusHours(1);
+
+        assertTrue(bookingServiceImpl.isNotValidDate(startBooking, endBooking));
+    }
+
+    @Test
+    void testEndBookingBeforeStartBooking() {
+        LocalDateTime startBooking = LocalDateTime.now().plusHours(2);
+        LocalDateTime endBooking = LocalDateTime.now().plusHours(1);
+
+        assertTrue(bookingServiceImpl.isNotValidDate(startBooking, endBooking));
+    }
+
+    @Test
+    void testStartAndEndBookingSame() {
+        LocalDateTime startBooking = LocalDateTime.now().plusHours(1);
+        LocalDateTime endBooking = startBooking;
+
+        assertTrue(bookingServiceImpl.isNotValidDate(startBooking, endBooking));
     }
 }
