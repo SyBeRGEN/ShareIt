@@ -1,18 +1,6 @@
 package ru.practicum.shareit.item.controller;
 
-import static org.mockito.Mockito.anyLong;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import java.time.LocalDate;
-
-import java.util.ArrayList;
-import java.util.Optional;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
@@ -42,10 +30,19 @@ import ru.practicum.shareit.item.repository.ItemRepository;
 import ru.practicum.shareit.item.service.ItemService;
 import ru.practicum.shareit.item.service.ItemServiceImpl;
 import ru.practicum.shareit.item.storage.ItemStorageImpl;
+import ru.practicum.shareit.itemRequest.model.ItemRequest;
+import ru.practicum.shareit.itemRequest.repository.ItemRequestRepository;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
 import ru.practicum.shareit.user.storage.UserStorageImpl;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Optional;
+
+import static org.mockito.Mockito.*;
 
 @ContextConfiguration(classes = {ItemController.class})
 @ExtendWith(SpringExtension.class)
@@ -65,7 +62,8 @@ class ItemControllerTest {
         itemDto.setDescription("The characteristics of someone or something");
         itemDto.setId(1L);
         itemDto.setName("Name");
-        itemDto.setOwner(null);
+        itemDto.setOwner(new UserDto(1L, "Name", "jane.doe@example.org"));
+        itemDto.setRequestId(1L);
         String content = (new ObjectMapper()).writeValueAsString(itemDto);
         MockHttpServletRequestBuilder requestBuilder = MockMvcRequestBuilders.patch("/items/{itemId}", 1L)
                 .header("X-Sharer-User-Id", "42")
@@ -77,7 +75,8 @@ class ItemControllerTest {
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.content().contentType("application/json"))
                 .andExpect(MockMvcResultMatchers.content()
-                        .string("{\"id\":null,\"name\":null,\"description\":null,\"available\":null,\"owner\":null,\"request\":null}"));
+                        .string(
+                                "{\"id\":null,\"name\":null,\"description\":null,\"available\":null,\"owner\":null,\"requestId\":null}"));
     }
 
     @Test
@@ -132,34 +131,23 @@ class ItemControllerTest {
     }
 
     @Test
-    void testCreate() throws Exception {
-        when(itemService.getAllItemsByUserId(anyLong())).thenReturn(new ArrayList<>());
-
-        ItemDto itemDto = new ItemDto();
-        itemDto.setAvailable(true);
-        itemDto.setDescription("The characteristics of someone or something");
-        itemDto.setId(1L);
-        itemDto.setName("Name");
-        itemDto.setOwner(new UserDto(1L, "Name", "jane.doe@example.org"));
-        String content = (new ObjectMapper()).writeValueAsString(itemDto);
-        MockHttpServletRequestBuilder requestBuilder = MockMvcRequestBuilders.get("/items")
-                .header("X-Sharer-User-Id", 1L)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(content);
-        MockMvcBuilders.standaloneSetup(itemController)
-                .build()
-                .perform(requestBuilder)
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.content().contentType("application/json"))
-                .andExpect(MockMvcResultMatchers.content().string("[]"));
-    }
-
-    @Test
     void testCreateComment() {
         User owner = new User();
         owner.setEmail("jane.doe@example.org");
         owner.setId(1L);
         owner.setName("Name");
+
+        User requester = new User();
+        requester.setEmail("jane.doe@example.org");
+        requester.setId(1L);
+        requester.setName("Name");
+
+        ItemRequest request = new ItemRequest();
+        request.setCreated(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setDescription("The characteristics of someone or something");
+        request.setId(1L);
+        request.setItems(new HashSet<>());
+        request.setRequester(requester);
 
         Item item = new Item();
         item.setAvailable(true);
@@ -167,6 +155,7 @@ class ItemControllerTest {
         item.setId(1L);
         item.setName("Name");
         item.setOwner(owner);
+        item.setRequest(request);
         ItemRepository repository = mock(ItemRepository.class);
         when(repository.findById(Mockito.<Long>any())).thenReturn(Optional.of(item));
         ItemStorageImpl itemStorage = new ItemStorageImpl(repository);
@@ -189,12 +178,25 @@ class ItemControllerTest {
         owner2.setId(1L);
         owner2.setName("start");
 
+        User requester2 = new User();
+        requester2.setEmail("jane.doe@example.org");
+        requester2.setId(1L);
+        requester2.setName("start");
+
+        ItemRequest request2 = new ItemRequest();
+        request2.setCreated(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request2.setDescription("The characteristics of someone or something");
+        request2.setId(1L);
+        request2.setItems(new HashSet<>());
+        request2.setRequester(requester2);
+
         Item item2 = new Item();
         item2.setAvailable(true);
         item2.setDescription("The characteristics of someone or something");
         item2.setId(1L);
         item2.setName("start");
         item2.setOwner(owner2);
+        item2.setRequest(request2);
 
         Booking booking = new Booking();
         booking.setBooker(booker);
@@ -220,12 +222,25 @@ class ItemControllerTest {
         owner3.setId(1L);
         owner3.setName("Name");
 
+        User requester3 = new User();
+        requester3.setEmail("jane.doe@example.org");
+        requester3.setId(1L);
+        requester3.setName("Name");
+
+        ItemRequest request3 = new ItemRequest();
+        request3.setCreated(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request3.setDescription("The characteristics of someone or something");
+        request3.setId(1L);
+        request3.setItems(new HashSet<>());
+        request3.setRequester(requester3);
+
         Item item3 = new Item();
         item3.setAvailable(true);
         item3.setDescription("The characteristics of someone or something");
         item3.setId(1L);
         item3.setName("Name");
         item3.setOwner(owner3);
+        item3.setRequest(request3);
 
         Comment comment = new Comment();
         comment.setAuthor(author);
@@ -236,20 +251,38 @@ class ItemControllerTest {
         CommentRepository commentRepository = mock(CommentRepository.class);
         when(commentRepository.save(Mockito.<Comment>any())).thenReturn(comment);
         ItemMapperImpl mapper = new ItemMapperImpl();
+        ItemRequestRepository itemRequestRepository = mock(ItemRequestRepository.class);
         BookingMapperImpl bookingMapper = new BookingMapperImpl();
         ItemController itemController = new ItemController(new ItemServiceImpl(mapper, itemStorage, userStorage,
-                bookingRepository, commentRepository, bookingMapper, new CommentMapperImpl()));
-
-        CommentDto commentDto = new CommentDto();
-        commentDto.setAuthorName("JaneDoe");
-        commentDto.setCreated(LocalDate.of(1970, 1, 1).atStartOfDay());
-        commentDto.setId(1L);
-        commentDto.setText("Text");
-        itemController.createComment(1L, 1L, commentDto);
+                bookingRepository, commentRepository, itemRequestRepository, bookingMapper, new CommentMapperImpl()));
+        itemController.createComment(1L, 1L, new CommentDto());
         verify(repository).findById(Mockito.<Long>any());
         verify(repository2).findById(Mockito.<Long>any());
         verify(bookingRepository).findAllByItemIdAndBookerIdAndStatus(anyLong(), anyLong(), Mockito.<StatusType>any(),
                 Mockito.<Sort>any());
+    }
+
+    @Test
+    void testCreate() throws Exception {
+        when(itemService.getAllItemsByUserId(anyLong())).thenReturn(new ArrayList<>());
+
+        ItemDto itemDto = new ItemDto();
+        itemDto.setAvailable(true);
+        itemDto.setDescription("The characteristics of someone or something");
+        itemDto.setId(1L);
+        itemDto.setName("Name");
+        itemDto.setOwner(new UserDto(1L, "Name", "jane.doe@example.org"));
+        String content = (new ObjectMapper()).writeValueAsString(itemDto);
+        MockHttpServletRequestBuilder requestBuilder = MockMvcRequestBuilders.get("/items")
+                .header("X-Sharer-User-Id", 1L)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(content);
+        MockMvcBuilders.standaloneSetup(itemController)
+                .build()
+                .perform(requestBuilder)
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.content().contentType("application/json"))
+                .andExpect(MockMvcResultMatchers.content().string("[]"));
     }
 
     @Test

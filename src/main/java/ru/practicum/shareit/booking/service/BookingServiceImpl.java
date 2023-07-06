@@ -1,6 +1,7 @@
 package ru.practicum.shareit.booking.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +25,7 @@ import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserService;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -90,10 +92,10 @@ public class BookingServiceImpl implements BookingService {
 
     @Transactional(readOnly = true)
     @Override
-    public List<BookingOutputDto> getBookingsByUser(long userId, State state) {
+    public List<BookingOutputDto> getBookingsByUser(Pageable pageable, long userId, State state) {
         User booker = userMapper.toEntity(userService.getById(userId));
         Sort sort = Sort.by(Sort.Direction.DESC, "start");
-        List<Booking> bookings = storage.getBookingsByUser(booker, sort, state);
+        List<Booking> bookings = storage.getBookingsByUser(pageable, booker, sort, state);
 
         return bookings
                 .stream()
@@ -103,10 +105,12 @@ public class BookingServiceImpl implements BookingService {
 
     @Transactional(readOnly = true)
     @Override
-    public List<BookingOutputDto> getBookingsForOwner(long userId, State state) {
+    public List<BookingOutputDto> getBookingsForOwner(Pageable pageable, long userId, State state) {
         User owner = userMapper.toEntity(userService.getById(userId));
         Sort sort = Sort.by(Sort.Direction.DESC, "start");
-        List<Booking> bookings = storage.getBookingsForOwner(owner, sort, state);
+        List<Booking> bookings = storage.getBookingsForOwner(pageable, owner, sort, state);
+
+        bookings.sort(Comparator.comparing(Booking::getStart).reversed());
 
         return bookings
                 .stream()
@@ -114,7 +118,7 @@ public class BookingServiceImpl implements BookingService {
                 .collect(Collectors.toList());
     }
 
-    private void validateAddBooking(Booking booking, Item item, User booker) {
+    void validateAddBooking(Booking booking, Item item, User booker) {
         if (booker.getId() == item.getOwner().getId()) {
             throw new AccessException("Владелец не может бронировать свои вещи");
         } else if (!item.getAvailable()) {
@@ -124,12 +128,12 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    private boolean isNotValidDate(LocalDateTime startBooking, LocalDateTime endBooking) {
+    boolean isNotValidDate(LocalDateTime startBooking, LocalDateTime endBooking) {
         return startBooking.isBefore(LocalDateTime.now()) || endBooking.isBefore(LocalDateTime.now())
                 || endBooking.isBefore(startBooking) || startBooking.isEqual(endBooking);
     }
 
-    private boolean isUnableToAccess(long userId, Booking booking, AccessLevel accessLevel) {
+    boolean isUnableToAccess(long userId, Booking booking, AccessLevel accessLevel) {
         boolean isUnable = true;
         switch (accessLevel) {
             case OWNER:

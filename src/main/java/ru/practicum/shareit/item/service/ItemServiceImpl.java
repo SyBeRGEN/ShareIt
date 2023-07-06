@@ -3,8 +3,10 @@ package ru.practicum.shareit.item.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import ru.practicum.shareit.booking.dto.BookingItemDto;
 import ru.practicum.shareit.booking.mapper.BookingMapper;
 import ru.practicum.shareit.booking.model.Booking;
@@ -21,6 +23,8 @@ import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.CommentRepository;
 import ru.practicum.shareit.item.storage.ItemStorage;
+import ru.practicum.shareit.itemRequest.model.ItemRequest;
+import ru.practicum.shareit.itemRequest.repository.ItemRequestRepository;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.storage.UserStorage;
 
@@ -37,6 +41,7 @@ public class ItemServiceImpl implements ItemService {
     private final UserStorage userStorage;
     private final BookingRepository bookingRepository;
     private final CommentRepository commentRepository;
+    private final ItemRequestRepository itemRequestRepository;
     private final BookingMapper bookingMapper;
     private final CommentMapper commentMapper;
 
@@ -75,7 +80,7 @@ public class ItemServiceImpl implements ItemService {
                 .map(mapper::toDtoWithBooking)
                 .collect(Collectors.toList());
 
-        List<BookingItemDto> bookingItemDtoList = bookingRepository.findAllByOwnerId(userId,
+        List<BookingItemDto> bookingItemDtoList = bookingRepository.findAllByOwnerIdWithoutPaging(userId,
                         Sort.by(Sort.Direction.DESC, "start"))
                 .stream()
                 .map(bookingMapper::toBookingItemDto)
@@ -97,6 +102,13 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemDto create(ItemDto itemDto, long userId) {
         Item newItem = mapper.toEntity(itemDto);
+        if (itemDto.getRequestId() != null) {
+            ItemRequest itemRequest = itemRequestRepository.findById(itemDto.getRequestId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                            String.format("Запроса с id = %s нет", itemDto.getRequestId())));
+
+            newItem.setRequest(itemRequest);
+        }
         User owner = userStorage.getById(userId);
         itemOwnerCheckValidator(owner, newItem, userId);
         Item createdItem = itemStorage.create(newItem);
@@ -193,12 +205,12 @@ public class ItemServiceImpl implements ItemService {
 
     private void setBookings(ItemDtoWithBooking itemDtoWithBooking, List<BookingItemDto> bookings) {
         itemDtoWithBooking.setLastBooking(bookings.stream()
-                .filter(booking -> booking.getItem().getId() == itemDtoWithBooking.getId() &&
+                .filter(booking -> Objects.equals(booking.getItem().getId(), itemDtoWithBooking.getId()) &&
                         booking.getStart().isBefore(LocalDateTime.now()))
                 .max(Comparator.comparing(BookingItemDto::getStart)).orElse(null));
 
         itemDtoWithBooking.setNextBooking(bookings.stream()
-                .filter(booking -> booking.getItem().getId() == itemDtoWithBooking.getId() &&
+                .filter(booking -> Objects.equals(booking.getItem().getId(), itemDtoWithBooking.getId()) &&
                         booking.getStart().isAfter(LocalDateTime.now()))
                 .min(Comparator.comparing(BookingItemDto::getStart)).orElse(null));
     }
