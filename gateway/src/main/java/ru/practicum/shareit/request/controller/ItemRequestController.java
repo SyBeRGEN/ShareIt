@@ -17,7 +17,7 @@ import javax.validation.constraints.Min;
 @Validated
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class ItemRequestController {
-    public final String userIdHeader = "X-Sharer-User-Id";
+    public static final String userIdHeader = "X-Sharer-User-Id";
     private final ItemRequestClient itemRequestClient;
 
     @PostMapping

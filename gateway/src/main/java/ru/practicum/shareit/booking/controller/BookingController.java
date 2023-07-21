@@ -17,7 +17,7 @@ import javax.validation.constraints.Min;
 @Validated
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class BookingController {
-    public final String userIdHeader = "X-Sharer-User-Id";
+    public static final String userIdHeader = "X-Sharer-User-Id";
     private final BookingClient bookingClient;
 
     @PostMapping

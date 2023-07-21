@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 public class BaseWebClient {
-    public final String userIdHeader = "X-Sharer-User-Id";
+    public static final String userIdHeader = "X-Sharer-User-Id";
     protected WebClient webClient;
 
     public BaseWebClient(WebClient webClient) {
